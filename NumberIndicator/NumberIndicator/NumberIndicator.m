@@ -12,7 +12,12 @@
 	CGRect _upper;
 	CGRect _middle;
 	CGRect _lower;
+	
+	/// 表示すべき番号
 	NSInteger _num;
+	
+	/// アニメーション中
+	BOOL _transitioning;
 }
 
 @property (nonatomic, weak) IBOutlet UIView *view;
@@ -66,43 +71,51 @@
 }
 
 - (void)increment {
-	if (_num == 99) {
-		return;
+	if ([self changeNumberFrom:_num toPositive:YES]) {
+		_num++;
 	}
-	self.label2.text = [NSString stringWithFormat:@"%ld", _num];
-	self.label2.frame = _middle;
-	_num++;
-	self.label1.text = [NSString stringWithFormat:@"%ld", _num];
-	self.label1.frame = _upper;
-	[UIView animateWithDuration:0.5f
-						  delay:0.0f
-						options:UIViewAnimationOptionCurveEaseIn
-					 animations:^{
-						 self.label2.frame = _lower;
-						 self.label1.frame = _middle;
-					 } completion:^(BOOL finished) {
-						 
-					 }];
 }
 
 - (void)decrement {
-	if (_num == 0) {
-		return;
+	if ([self changeNumberFrom:_num toPositive:NO]) {
+		_num--;
 	}
-	self.label2.text = [NSString stringWithFormat:@"%ld", _num];
+}
+
+- (BOOL)changeNumberFrom:(NSInteger)from toPositive:(BOOL)positive {
+	
+	__block BOOL positive_ = positive;
+	__block NSInteger from_ = from;
+	__block NSInteger to_ = from_ + (positive_ ? 1 : -1);
+	
+	if (to_ > 99 || to_ < 0) {
+		return NO;
+	}
+	
+	if (_transitioning) {
+		return YES;
+	}
+	
+	self.label2.text = [NSString stringWithFormat:@"%ld", from];
 	self.label2.frame = _middle;
-	_num--;
-	self.label1.text = [NSString stringWithFormat:@"%ld", _num];
-	self.label1.frame = _lower;
+	
+	self.label1.text = [NSString stringWithFormat:@"%ld", to_];
+	self.label1.frame = (positive_ ? _upper : _lower);
+	
+	_transitioning = YES;
 	[UIView animateWithDuration:0.5f
 						  delay:0.0f
 						options:UIViewAnimationOptionCurveEaseIn
 					 animations:^{
-						 self.label2.frame = _upper;
+						 self.label2.frame = (positive_ ? _lower : _upper);
 						 self.label1.frame = _middle;
 					 } completion:^(BOOL finished) {
-						 
+						 _transitioning = NO;
+						 if (to_ != _num) {
+							 [self changeNumberFrom:to_ toPositive:(_num > to_)];
+						 }
 					 }];
+	return YES;
 }
 
 @end
